@@ -1,0 +1,79 @@
+﻿using System.Collections; using System.Collections.Generic; using UnityEngine;  using Helper;  public class GalaxySegment
+{
+    public int index;
+    public float theta;
+    public float length;
+    public Quaternion rotation;
+    public Vector3 density;
+    public GalaxySegment previous;
+    public Vector3 center;
+    private Vector3 backward;
+    private Vector3 forward;
+    private Vector3 backward_tangent;
+    private Vector3 forward_tangent;
+
+    public void Fill()
+    {
+        this.SetCenter();
+        this.SetBackward();
+        this.SetForward();
+        this.SetBackwardTangent();
+        this.SetForwardTangent();
+    }
+
+    void SetCenter()
+    {
+        this.center = Vector3.zero;
+        this.center.x = Mathf.Sin(Mathf.Deg2Rad * this.theta);
+        this.center.y = Mathf.Cos(Mathf.Deg2Rad * this.theta);
+        this.center *= this.length * (this.index + 1);
+        this.center = rotation * this.center + this.previous.center;
+    }    
+
+    void SetBackward()
+    {
+        this.backward = Vector3.zero;
+        this.backward.x = Mathf.Sin(Mathf.Deg2Rad * this.theta);
+        this.backward.y = Mathf.Cos(Mathf.Deg2Rad * this.theta);
+        this.backward *= this.length / 2 * (this.index + 1);
+        this.backward = this.rotation * this.backward + this.previous.center;
+    }
+
+    void SetForward()
+    {
+        this.forward = Vector3.zero;
+        this.forward.x = Mathf.Sin(Mathf.Deg2Rad * this.theta);
+        this.forward.y = Mathf.Cos(Mathf.Deg2Rad * this.theta);
+        this.forward *= this.length / 2 * (this.index + 2);
+        this.forward = previous.rotation * this.forward + this.center;
+    }
+
+    void SetBackwardTangent()
+    {
+        this.backward_tangent = Vector3.zero;
+        this.backward_tangent.x = Mathf.Sin(Mathf.Deg2Rad * this.theta) * this.density.x;
+        this.backward_tangent.y = Mathf.Cos(Mathf.Deg2Rad * this.theta) * this.density.y;
+        this.backward_tangent = Quaternion.Euler(0, 0, 90) * this.rotation * this.backward_tangent + this.backward;
+    }
+
+    void SetForwardTangent()
+    {
+
+    }
+}  [ExecuteInEditMode] public class Galaxy : MonoBehaviour {     public bool drawGizmo = true;     public Vector2 size;     public uint armsCount;     public uint armsSegmentsCount;     public float armsSegmentsLength;     public float armsSegmentsDensity;     public float armsAngle;     public uint starCount;     public uint starCountPerArm;      private List<Vector3> bases = new List<Vector3>();     private List<Vector3[]> tangents = new List<Vector3[]>();     private List<List<Vector3>> segments = new List<List<Vector3>>();     private List<ParticleSystem.Particle> points;     private ParticleSystem system;      void Start()     {         GetSegments(false);          points = new List<ParticleSystem.Particle>();         system = gameObject.GetComponent<ParticleSystem>();          for (int i = 0; i < segments.Count; ++i)         {             Vector3 old_segment = bases[i];              uint stars = starCountPerArm;              for (int j = 0; j < segments[i].Count; ++j)             {                 Vector3 new_segment = segments[i][j];                  float density = (armsSegmentsCount - j) / (float)armsSegmentsCount * armsSegmentsDensity;                 float percent = (armsSegmentsCount - j) / (float)armsSegmentsCount;                  Vector3 density_size = size.normalized * density;                  uint segmentStars = (uint)(stars * (percent));                  Debug.Log(density);                 Debug.Log(percent + "% : " + segmentStars);                 Debug.Log(old_segment + " : " + new_segment);                  for(int k = 0; k <= segmentStars; ++k)                 {                     float d = Random.Range(0, density);                     float t = Random.Range(0f, 1f);                     float a = t * d;                      float x = Mathf.Sin(Mathf.Deg2Rad * 45) * d;                     float y = Mathf.Cos(Mathf.Deg2Rad * 45) * d;                      Vector3 star = MathHelper.GetLinearVector3(t, old_segment, new_segment);                     star.x += x;                     star.y += y;                      ParticleSystem.Particle point = new ParticleSystem.Particle();                      point.position = star;                     point.startSize = 1f;                     point.startColor = Color.magenta;                      points.Add(point);                 }                  /*for (float k = 0f; k < 1.0f; k = k + 0.01f)                 {                     Vector3 segment = MathHelper.GetLinearVector3(k, old_segment, new_segment);                     //Debug.Log(segment);                 }*/                  old_segment = new_segment;             }         }          system.SetParticles(points.ToArray(), points.Count);     }      void Update()     {         if(armsCount > 100)             armsCount = 100;          if(armsSegmentsCount > 1000)             armsSegmentsCount = 1000;          if (armsSegmentsLength < 0)             armsSegmentsLength = 0;          if (armsSegmentsDensity < 0)             armsSegmentsDensity = 0;          if (armsAngle < -180)             armsAngle = -180;         else if(armsAngle > 180)             armsAngle = 180;          if (starCount != starCountPerArm * armsCount)             starCount = starCountPerArm * armsCount;          if (starCountPerArm != starCount / armsCount)             starCountPerArm = starCount / armsCount;     }      void OnDrawGizmosSelected()     {         if(drawGizmo)         {             GetSegments(true);         }             }      void GetSegments(bool drawing)     {         bases.Clear();         segments.Clear();          Vector3 center = transform.position;          if(drawing)             GizmoHelper.DrawEllipse(center, size, GetAngle(), Color.magenta);          float angle_interval = 360 / (float)armsCount;         Quaternion world_q = Quaternion.AngleAxis(GetAngle(), Vector3.forward);          for (int i = 0; i < armsCount; ++i)         {             segments.Insert(i, new List<Vector3>());              float angle = i * angle_interval;             angle = -GetAngle(angle);              float next_angle = (i + 1) * angle_interval;             next_angle = -GetAngle(next_angle);              Vector3 base_segment = center;             base_segment.x = Mathf.Sin(Mathf.Deg2Rad * angle) * size.x;             base_segment.y = Mathf.Cos(Mathf.Deg2Rad * angle) * size.y;             base_segment = world_q * base_segment + center;              bases.Insert(i, base_segment);                      float previous_density = armsSegmentsCount / (float)armsSegmentsCount * armsSegmentsDensity;              GalaxySegment fake_preivous = new GalaxySegment();             fake_preivous.rotation = world_q;             fake_preivous.center = base_segment;              GalaxySegment previous_segment = new GalaxySegment();
+            previous_segment.previous = fake_preivous;
+            previous_segment.theta = GetArchimedeanAngle(1);
+            previous_segment.rotation = Quaternion.AngleAxis(previous_segment.theta, Vector3.forward) * world_q;
+            previous_segment.density = size.normalized * (armsSegmentsCount / (float)armsSegmentsCount * armsSegmentsDensity);
+            previous_segment.length = armsSegmentsLength;
+            previous_segment.index = 0;
+
+            previous_segment.Fill();              if (drawing)
+            {
+                GizmoHelper.DrawLine(center, base_segment, Color.yellow);
+            }              for (int j = 0; j < armsSegmentsCount; ++j)             {                 float density = (armsSegmentsCount - j) / (float)armsSegmentsCount * armsSegmentsDensity;                  GalaxySegment segment = new GalaxySegment();                 segment.previous = previous_segment;                 segment.theta = GetArchimedeanAngle(j + 1);                 segment.rotation = Quaternion.AngleAxis(segment.theta, Vector3.forward) * world_q;                 segment.density = size.normalized * density;                 segment.length = armsSegmentsLength;                 segment.index = j;                  segment.Fill();                                   /*float angle_segment = GetArchimedeanAngle(j + 1);                 float next_angle_segment = GetArchimedeanAngle(j + 2);                  Quaternion local_q = Quaternion.AngleAxis(angle_segment, Vector3.forward) * world_q;                 Quaternion next_local_q = Quaternion.AngleAxis(next_angle_segment, Vector3.forward) * world_q;                  float density = (armsSegmentsCount - j) / (float)armsSegmentsCount * armsSegmentsDensity;                 Vector2 density_size = size.normalized * density;                  Vector3 current_segment = Vector3.zero;                 current_segment.x = Mathf.Sin(Mathf.Deg2Rad * angle);                 current_segment.y = Mathf.Cos(Mathf.Deg2Rad * angle);                 current_segment *= armsSegmentsLength * (j + 1);                 current_segment = local_q * current_segment + previous_segment;                  Vector3 current_segment_forward_tangent = Vector3.zero;                 current_segment_forward_tangent.x = Mathf.Sin(Mathf.Deg2Rad * angle);                 current_segment_forward_tangent.y = Mathf.Cos(Mathf.Deg2Rad * angle);                 current_segment_forward_tangent *= armsSegmentsLength / 2 * (j + 2);                 current_segment_forward_tangent = next_local_q * current_segment_forward_tangent + current_segment;                  Vector3 current_segment_backward_tangent = Vector3.zero;                 current_segment_backward_tangent.x = Mathf.Sin(Mathf.Deg2Rad * angle);                 current_segment_backward_tangent.y = Mathf.Cos(Mathf.Deg2Rad * angle);                 current_segment_backward_tangent *= armsSegmentsLength / 2 * (j + 1);                 current_segment_backward_tangent = local_q * current_segment_backward_tangent + previous_segment;                  Vector3 next_segment = Vector3.zero;                 next_segment.x = Mathf.Sin(Mathf.Deg2Rad * next_angle) * density_size.x;                 next_segment.y = Mathf.Cos(Mathf.Deg2Rad * next_angle) * density_size.y;                 next_segment = next_local_q * next_segment + current_segment;                  Vector3 current_tangent_left = Vector3.zero;                 current_tangent_left.x = Mathf.Sin(Mathf.Deg2Rad * angle) * density_size.x;                 current_tangent_left.y = Mathf.Cos(Mathf.Deg2Rad * angle) * density_size.y;                 current_tangent_left = Quaternion.Euler(0, 0, 90) * local_q * current_tangent_left + current_segment_backward_tangent;                                  Vector3 current_tangent_right = Vector3.zero;                 current_tangent_right.x = Mathf.Sin(Mathf.Deg2Rad * angle) * density_size.x;                 current_tangent_right.y = Mathf.Cos(Mathf.Deg2Rad * angle) * density_size.y;                 current_tangent_right = Quaternion.Euler(0, 0, -90) * local_q * current_tangent_right + current_segment_backward_tangent;                  Vector3 next_tangent_left = Vector3.zero;                 next_tangent_left.x = Mathf.Sin(Mathf.Deg2Rad * angle) * density_size.x;                 next_tangent_left.y = Mathf.Cos(Mathf.Deg2Rad * angle) * density_size.y;                 next_tangent_left = Quaternion.Euler(0, 0, 90) * next_local_q * next_tangent_left + current_segment;                  Vector3 next_tangent_right = Vector3.zero;                 next_tangent_right.x = Mathf.Sin(Mathf.Deg2Rad * angle) * density_size.x;                 next_tangent_right.y = Mathf.Cos(Mathf.Deg2Rad * angle) * density_size.y;                 next_tangent_right = Quaternion.Euler(0, 0, -90) * next_local_q * next_tangent_right + current_segment;                  Vector3 next_tangent_left2 = Vector3.zero;                 next_tangent_left2.x = Mathf.Sin(Mathf.Deg2Rad * angle) * density_size.x;                 next_tangent_left2.y = Mathf.Cos(Mathf.Deg2Rad * angle) * density_size.y;                 next_tangent_left2 = Quaternion.Euler(0, 0, 90) * local_q * next_tangent_left2 + current_segment;                  Vector3 next_tangent_right2 = Vector3.zero;                 next_tangent_right2.x = Mathf.Sin(Mathf.Deg2Rad * angle) * density_size.x;                 next_tangent_right2.y = Mathf.Cos(Mathf.Deg2Rad * angle) * density_size.y;                 next_tangent_right2 = Quaternion.Euler(0, 0, -90) * local_q * next_tangent_right2 + current_segment;                  float angle_current_segment_a = GetAngle(current_segment - current_segment_backward_tangent, current_segment - next_tangent_left);                 float angle_current_segment_b = GetAngle(current_segment - current_segment_backward_tangent, current_segment - next_tangent_left2);
+
+                Debug.Log(angle_current_segment_a + " : " + angle_current_segment_b);                  float aaa = ( angle_current_segment_a - angle_current_segment_b) / 2;                  if(armsAngle > 90)                     aaa = -90 - aaa;                 else if(armsAngle < -90)                     aaa = 90 - aaa;                  Debug.Log(aaa);                  Vector3 next_tangent_left3 = Vector3.zero;                 next_tangent_left3.x = Mathf.Sin(Mathf.Deg2Rad * angle) * density_size.x;                 next_tangent_left3.y = Mathf.Cos(Mathf.Deg2Rad * angle) * density_size.y;                 next_tangent_left3 = Quaternion.Euler(0, 0, 90 - (aaa)) * local_q * next_tangent_left3 + current_segment;                  Vector3 next_tangent_right3 = Vector3.zero;                 next_tangent_right3.x = Mathf.Sin(Mathf.Deg2Rad * angle) * density_size.x;                 next_tangent_right3.y = Mathf.Cos(Mathf.Deg2Rad * angle) * density_size.y;                 next_tangent_right3 = Quaternion.Euler(0, 0, -90 - ( aaa )) * local_q * next_tangent_right3 + current_segment;*/                  /*if (drawing)                 {                     GizmoHelper.DrawEllipse(current_segment, density_size, local_q.eulerAngles.z, Color.red);                      GizmoHelper.DrawLine(previous_segment, current_segment, Color.cyan);                     GizmoHelper.DrawLine(previous_segment, current_segment_backward_tangent, Color.yellow);                      GizmoHelper.DrawLine(current_segment, next_tangent_left, Color.yellow);                     GizmoHelper.DrawLine(current_segment, next_tangent_right, Color.yellow);                     GizmoHelper.DrawLine(current_segment, next_tangent_left2, Color.cyan);                     GizmoHelper.DrawLine(current_segment, next_tangent_right2, Color.cyan);                      GizmoHelper.DrawLine(current_segment, next_tangent_left3, Color.red);
+                    GizmoHelper.DrawLine(current_segment, next_tangent_right3, Color.red);
+
+                    GizmoHelper.DrawLine(current_segment_backward_tangent, current_tangent_left, Color.cyan);                     GizmoHelper.DrawLine(current_segment_backward_tangent, current_tangent_right, Color.yellow);                      //GizmoHelper.DrawLine(current_segment_backward_tangent, current_tangent_right, Color.yellow);                   }*/                  //segments[i].Insert(j, segment_ellipse);                  previous_segment = segment;             }         }     }      float GetLogarythmicAngle(float f)     {         return armsAngle * Mathf.Log(f);     }      float GetArchimedeanAngle(float f)     {         return armsAngle * f;     }      float GetAngle(float angle = 0)     {         return transform.rotation.eulerAngles.z + angle;     }      float GetAngle(Vector3 a, Vector3 b)     {         float dot = Vector3.Dot(a, b);         dot = dot / (a.magnitude * b.magnitude);         return Mathf.Acos(dot) * Mathf.Rad2Deg;     } } 

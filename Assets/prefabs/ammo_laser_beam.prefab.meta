@@ -1,0 +1,12 @@
+fileFormatVersion: 2
+guid: 3457e0f350022b141993c10957c76afa
+labels:
+- Vehicle
+- Weapon
+timeCreated: 1498739721
+licenseType: Free
+NativeFormatImporter:
+  mainObjectFileID: -1
+  userData: 
+  assetBundleName: spaceship
+  assetBundleVariant: ammo

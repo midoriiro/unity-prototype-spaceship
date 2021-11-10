@@ -1,0 +1,11 @@
+fileFormatVersion: 2
+guid: cced0f6cb9ec6c84193bb285cc2f98db
+labels:
+- Vehicle
+timeCreated: 1498733087
+licenseType: Free
+NativeFormatImporter:
+  mainObjectFileID: 100100000
+  userData: 
+  assetBundleName: spaceship
+  assetBundleVariant: vehicle

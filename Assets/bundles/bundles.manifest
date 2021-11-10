@@ -1,0 +1,15 @@
+ManifestFileVersion: 0
+CRC: 664901094
+AssetBundleManifest:
+  AssetBundleInfos:
+    Info_0:
+      Name: spaceship.ammo
+      Dependencies:
+        Dependency_0: spaceship.materials
+    Info_1:
+      Name: spaceship.vehicle
+      Dependencies:
+        Dependency_0: spaceship.materials
+    Info_2:
+      Name: spaceship.materials
+      Dependencies: {}

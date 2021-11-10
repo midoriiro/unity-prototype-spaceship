@@ -1,0 +1,39 @@
+ManifestFileVersion: 0
+CRC: 781920788
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 73bba522b06e3fc27870a7d93870d514
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: b29886a959e4905b2d88371aa0b0be9f
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 54
+  Script: {instanceID: 0}
+- Class: 114
+  Script: {fileID: 11500000, guid: 206b44873bb836447a2d350c3d65f400, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: b3b795cbaa95835439c20bfc25edc92b, type: 3}
+- Class: 115
+  Script: {instanceID: 0}
+- Class: 120
+  Script: {instanceID: 0}
+- Class: 212
+  Script: {instanceID: 0}
+- Class: 213
+  Script: {instanceID: 0}
+- Class: 224
+  Script: {instanceID: 0}
+Assets:
+- Assets/prefabs/ammo_laser_beam.prefab
+- Assets/prefabs/ammo_laser_short_pulse.prefab
+- Assets/prefabs/ammo_laser_long_pulse.prefab
+Dependencies:
+- D:/home/workspace/unity/starship/Assets/bundles/spaceship.materials
